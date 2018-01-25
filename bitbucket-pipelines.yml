@@ -17,7 +17,7 @@ pipelines:
             - aws configure set aws_secret_access_key $AWS_SECRET
             - aws ecr get-login | sh
             - docker build -t goc-api-gateway .
-            - docker tag 577634299670.dkr.ecr.us-west-2.amazonaws.com/goc-api-gateway:prod
+            - docker tag goc-api-gateway 577634299670.dkr.ecr.us-west-2.amazonaws.com/goc-api-gateway:prod
             - docker push 577634299670.dkr.ecr.us-west-2.amazonaws.com/goc-api-gateway:prod
     development:
       - step:
@@ -29,7 +29,7 @@ pipelines:
             - aws configure set aws_secret_access_key $AWS_SECRET
             - aws ecr get-login | sh
             - docker build -t goc-api-gateway .
-            - docker tag 577634299670.dkr.ecr.us-west-2.amazonaws.com/goc-api-gateway:development
+            - docker tag goc-api-gateway 577634299670.dkr.ecr.us-west-2.amazonaws.com/goc-api-gateway:development
             - docker push 577634299670.dkr.ecr.us-west-2.amazonaws.com/goc-api-gateway:development
 options:
   docker: true
