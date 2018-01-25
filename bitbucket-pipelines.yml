@@ -1,0 +1,35 @@
+# This is a sample build configuration for Other.
+# Check our guides at https://confluence.atlassian.com/x/5Q4SMw for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image: python
+
+pipelines:
+  branches:
+    master:
+      - step:
+          script:
+            - pip install --upgrade pip
+            - pip install awscli --upgrade
+            - aws configure set default.region us-west-2
+            - aws configure set aws_access_key_id $AWS_KEY
+            - aws configure set aws_secret_access_key $AWS_SECRET
+            - aws ecr get-login | sh
+            - docker build -t goc-api-gateway .
+            - docker tag 577634299670.dkr.ecr.us-west-2.amazonaws.com/goc-api-gateway:prod
+            - docker push 577634299670.dkr.ecr.us-west-2.amazonaws.com/goc-api-gateway:prod
+    development:
+      - step:
+          script:
+            - pip install --upgrade pip
+            - pip install awscli --upgrade
+            - aws configure set default.region us-east-1
+            - aws configure set aws_access_key_id $AWS_KEY
+            - aws configure set aws_secret_access_key $AWS_SECRET
+            - aws ecr get-login | sh
+            - docker build -t goc-api-gateway .
+            - docker tag 577634299670.dkr.ecr.us-west-2.amazonaws.com/goc-api-gateway:development
+            - docker push 577634299670.dkr.ecr.us-west-2.amazonaws.com/goc-api-gateway:development
+options:
+  docker: true
