@@ -1,19 +1,42 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
+using EasyNetQ;
+using GOC.ApiGateway.Interfaces;
+using IdentityModel.Client;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GOC.ApiGateway.Controllers
 {
     [Route("api/[controller]")]
+    //[Authorize]
     public class ValuesController : Controller
     {
+        private readonly IInventoryService _service;
+
+        public ValuesController(IInventoryService service, IBus bus)
+        {
+            _service = service;
+        }
         // GET api/values
         [HttpGet]
-        public IEnumerable<string> Get()
+        public IActionResult Get()
         {
-            return new string[] { "value1", "value2" };
+            //var token = Request.Headers["authorization"].ToString();
+            //token = token.Replace("Bearer",string.Empty);
+            //token = token.Replace(" ",string.Empty);
+            //var delegateToke = await DelegateAsync(token);
+            //var client = new HttpClient();
+            //client.SetBearerToken(delegateToke.AccessToken);
+            //var response = new HttpResponseMessage();
+            //response = await client.GetAsync(new Uri("http://vagrant:5002/api/values"));
+            //if(response.IsSuccessStatusCode)
+            //{
+            //   return Ok(response.Content.ReadAsStringAsync());
+            // }
+            //return Ok(new string[] { response.StatusCode.ToString(), "value4" });
+            return Ok("hahax");
         }
 
         // GET api/values/5
@@ -40,5 +63,6 @@ namespace GOC.ApiGateway.Controllers
         public void Delete(int id)
         {
         }
+
     }
 }

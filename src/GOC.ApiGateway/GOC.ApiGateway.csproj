@@ -6,10 +6,27 @@
 
   <ItemGroup>
     <Folder Include="wwwroot\" />
+    <Folder Include="Services\" />
+    <Folder Include="Repositories\" />
+    <Folder Include="Interfaces\" />
+    <Folder Include="Handlers\" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.0" />
+    <PackageReference Include="IdentityServer4.AccessTokenValidation" Version="2.3.0" />
+    <PackageReference Include="IdentityModel.AspNetCore.OAuth2Introspection" Version="3.1.0" />
+    <PackageReference Include="Polly" Version="5.7.0" />
+    <PackageReference Include="Serilog" Version="2.6.0" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="2.4.0" />
+    <PackageReference Include="Microphone.Core" Version="0.6.7" />
+    <PackageReference Include="Microphone.AspNet" Version="0.6.7" />
+    <PackageReference Include="SimpleInjector" Version="4.0.12" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="2.0.2" />
+    <PackageReference Include="Serilog.Filters.Expressions" Version="1.1.0" />
+    <PackageReference Include="Serilog.Sinks.Literate" Version="3.0.0" />
+    <PackageReference Include="EasyNetQ" Version="2.2.0" />
+    <PackageReference Include="EasyNetQ.DI.SimpleInjector" Version="2.2.0" />
   </ItemGroup>
 
   <ItemGroup>
