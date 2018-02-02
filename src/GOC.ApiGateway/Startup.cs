@@ -12,10 +12,16 @@ using System.Net.Http;
 using System.Reflection;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using EasyNetQ;
-using EasyNetQ.DI;
-using GOC.ApiGateway.Interfaces;
-using GOC.ApiGateway.Services;
+using GOC.ApiGateway.HttpClientHelper;
+using Microphone;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.Mvc.ViewComponents;
+using SimpleInjector.Lifestyles;
+using SimpleInjector.Integration.AspNetCore.Mvc;
 
 namespace GOC.ApiGateway
 {
@@ -80,8 +86,27 @@ namespace GOC.ApiGateway
                 options.ApiSecret = AppSettings.Identity.ApiSecret;
                 options.ApiName = AppSettings.Identity.ApiName;
             });
+           
+            IntegrateSimpleInjector(services);
 
         }
+
+        private void IntegrateSimpleInjector(IServiceCollection services)
+        {
+            Container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
+
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+            services.AddSingleton<IControllerActivator>(
+                new SimpleInjectorControllerActivator(Container));
+            services.AddSingleton<IViewComponentActivator>(
+                new SimpleInjectorViewComponentActivator(Container));
+
+ 
+            services.EnableSimpleInjectorCrossWiring(Container);
+            services.UseSimpleInjectorAspNetRequestScoping(Container);
+        }
+
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
@@ -94,12 +119,13 @@ namespace GOC.ApiGateway
             app.UseAuthentication();
             app.UseMvc()
                .UseMicrophone("ApiGateway", "1.0", new Uri($"http://vagrant:5001"));
-            InitializeContainer();
+            InitializeContainer(app);
         }
 
-        protected void InitializeContainer()
+        protected void InitializeContainer(IApplicationBuilder app)
         {
-            
+            RegisterCustomHttpClient(app);
+
             Container.RegisterSingleton(new RetryPolicies(AppSettings.CircuitBreaker, AppSettings.WaitAndRetry, LoggerFactory));
 
             var repositoryAssembly = Assembly.GetEntryAssembly();
@@ -114,11 +140,72 @@ namespace GOC.ApiGateway
                 Container.Register(reg.Service, reg.Implementation, Lifestyle.Scoped);
             }
 
+            // message bus registration
             Container.Register<IBus>(() => RabbitHutch.CreateBus($"host={AppSettings.Rabbit.Host}"), Lifestyle.Singleton);
 
-            //InjectionExtensions.RegisterAsEasyNetQContainerFactory(Container);
+            Container.CrossWire<ILoggerFactory>(app);
             Container.Verify();
                                                   
         }
+
+        private void RegisterCustomHttpClient(IApplicationBuilder app)
+        {
+            Container.Register<IHttpTokenAuthorizationContext>(() =>
+            {
+                return new HttpTokenAuthorizationContext(
+                    httpContextAccessor: () =>
+                    {
+                        var httpContextAccessor = (HttpContextAccessor)app.ApplicationServices.GetService(typeof(IHttpContextAccessor));
+                        return httpContextAccessor.HttpContext;
+                    },
+                    bearerTokenAccessor: BearerTokenAccessor,
+                    // if request comes from javascript app
+                    accessTokenAccessor: async (hc) => await hc.GetTokenAsync("access_token")
+                );
+            }, Lifestyle.Scoped);
+
+            var consulUriResolverRegistration = Lifestyle.Singleton.CreateRegistration<Func<string, string, Uri>>(
+                () => (serviceName, relativeUri) => Cluster.Client.ResolveUri(serviceName, relativeUri), Container);
+
+            var httpMessageDecoratorRegistration =
+                Lifestyle.Singleton.CreateRegistration<Action<HttpRequestMessage>>(
+                    () => m =>
+                    {
+                        var authorizationContext = Container.GetInstance<IHttpTokenAuthorizationContext>();
+                        void SetBearerToken(string t) => m.Headers.Add("Authorization", $"Bearer {t}");
+
+                        if (authorizationContext.BearerTokens.Any())
+                        {
+                            SetBearerToken(authorizationContext.BearerTokens.First());
+                        }
+                        else if (!String.IsNullOrEmpty(authorizationContext.AccessToken))
+                        {
+                            SetBearerToken(authorizationContext.AccessToken);
+                        }
+                    }, Container);
+
+            var gocHttpClientRegistration = Lifestyle.Singleton.CreateRegistration(() => new HttpClient(), Container);
+
+
+            Container.RegisterConditional(serviceType: typeof(HttpClient), 
+                                          registration: gocHttpClientRegistration,
+                                          predicate: c => c.Consumer.ImplementationType.GetInterface(nameof(IGocHttpBasicClient)) != null);
+
+            void RegisterHttpClient(Type t, Registration r) => Container.RegisterConditional(serviceType: t, registration: r, predicate: c => c.Consumer.ImplementationType == typeof(HttpClientWrapper));
+
+            RegisterHttpClient(typeof(Func<string, string, Uri>), consulUriResolverRegistration);
+            RegisterHttpClient(typeof(Action<HttpRequestMessage>), httpMessageDecoratorRegistration);
+
+            Container.Register<IGocHttpBasicClient, HttpClientWrapper>(Lifestyle.Scoped);
+        }
+
+        private async Task<IEnumerable<string>> BearerTokenAccessor(HttpContext context)
+        {
+            return  context.Request.Headers["Authorization"]
+                .Where(x => x.StartsWith("Bearer "))
+                .Select(x => x.Substring(7));
+        }
     }
+
+    
 }

@@ -15,7 +15,7 @@ namespace GOC.ApiGateway.Controllers
     {
         private readonly IInventoryService _service;
 
-        public ValuesController(IInventoryService service, IBus bus)
+        public ValuesController(IInventoryService service, IBus bus, IGocHttpBasicClient http)
         {
             _service = service;
         }
