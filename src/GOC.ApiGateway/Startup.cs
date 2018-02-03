@@ -43,7 +43,7 @@ namespace GOC.ApiGateway
                 new DownstreamClient
                 {
                     ApiName = "api1.client",
-                    ApiSecret = "api1.client-secre"
+                    ApiSecret = "api1.client-secret"
                 }
             };
             AppSettings.Identity.DownstreamClients = downstreamClients;
@@ -128,6 +128,7 @@ namespace GOC.ApiGateway
 
             Container.RegisterSingleton(new RetryPolicies(AppSettings.CircuitBreaker, AppSettings.WaitAndRetry, LoggerFactory));
 
+            // auto register all other dependencies
             var repositoryAssembly = Assembly.GetEntryAssembly();
             var registrations = repositoryAssembly.GetExportedTypes()
                                                   .Where(type =>
@@ -191,7 +192,10 @@ namespace GOC.ApiGateway
                                           registration: gocHttpClientRegistration,
                                           predicate: c => c.Consumer.ImplementationType.GetInterface(nameof(IGocHttpBasicClient)) != null);
 
-            void RegisterHttpClient(Type t, Registration r) => Container.RegisterConditional(serviceType: t, registration: r, predicate: c => c.Consumer.ImplementationType == typeof(HttpClientWrapper));
+            void RegisterHttpClient(Type type, Registration registration) => Container.RegisterConditional(serviceType: type, 
+                                                                                                           registration: registration, 
+                                                                                                           predicate: context => 
+                                                                                                           context.Consumer.ImplementationType == typeof(HttpClientWrapper));
 
             RegisterHttpClient(typeof(Func<string, string, Uri>), consulUriResolverRegistration);
             RegisterHttpClient(typeof(Action<HttpRequestMessage>), httpMessageDecoratorRegistration);
