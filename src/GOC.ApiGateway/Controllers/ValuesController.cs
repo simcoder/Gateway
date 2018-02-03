@@ -1,24 +1,21 @@
-﻿using System;
-using System.Net.Http;
-using System.Threading.Tasks;
-using EasyNetQ;
-using GOC.ApiGateway.Interfaces;
-using IdentityModel.Client;
+﻿using GOC.ApiGateway.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GOC.ApiGateway.Controllers
 {
     [Route("api/[controller]")]
-    //[Authorize]
-    public class ValuesController : Controller
+    [Authorize]
+    public class ValuesController : BaseController
     {
         private readonly IInventoryService _service;
 
-        public ValuesController(IInventoryService service, IBus bus, IGocHttpBasicClient http)
+        public ValuesController(IInventoryService service, IGocHttpClient k)
         {
             _service = service;
         }
+
         // GET api/values
         [HttpGet]
         public IActionResult Get()

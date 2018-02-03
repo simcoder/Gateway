@@ -9,6 +9,7 @@
     <Folder Include="wwwroot\" />
     <Folder Include="Services\" />
     <Folder Include="Handlers\" />
+    <Folder Include="Repositories\InventoryService\" />
   </ItemGroup>
 
   <ItemGroup>

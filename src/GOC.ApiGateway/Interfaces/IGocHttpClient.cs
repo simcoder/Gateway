@@ -1,6 +1,6 @@
 ﻿namespace GOC.ApiGateway
 {
-    public interface IGocHttpBasicClient
+    public interface IGocHttpClient
     {
     }
 }

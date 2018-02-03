@@ -37,18 +37,19 @@ namespace GOC.ApiGateway
 
             Configuration = builder.Build();
             AppSettings = Configuration.GetSection("ApiGateWay").Get<AppSettings>();
-
+            //TODO do this somehow in json config file
             var downstreamClients = new List<DownstreamClient>
             {
                 new DownstreamClient
                 {
-                    ApiName = "api1.client",
-                    ApiSecret = "api1.client-secret"
+                    ClientId = "api1.client",
+                    ClientSecret = "api1.client-secret",
+                    ResourceName = "api2"
                 }
             };
             AppSettings.Identity.DownstreamClients = downstreamClients;
         }
-        public  static AppSettings   AppSettings { get; set; }
+        public  static AppSettings   AppSettings { get; private set; }
         public IConfiguration Configuration { get; }
         private Container Container { get; } = new Container();
         private ILoggerFactory LoggerFactory { get; set; }
@@ -143,7 +144,7 @@ namespace GOC.ApiGateway
 
             // message bus registration
             Container.Register<IBus>(() => RabbitHutch.CreateBus($"host={AppSettings.Rabbit.Host}"), Lifestyle.Singleton);
-
+            Container.Register<IHttpContextAccessor, HttpContextAccessor>(Lifestyle.Scoped);
             Container.CrossWire<ILoggerFactory>(app);
             Container.Verify();
                                                   
@@ -168,29 +169,13 @@ namespace GOC.ApiGateway
             var consulUriResolverRegistration = Lifestyle.Singleton.CreateRegistration<Func<string, string, Uri>>(
                 () => (serviceName, relativeUri) => Cluster.Client.ResolveUri(serviceName, relativeUri), Container);
 
-            var httpMessageDecoratorRegistration =
-                Lifestyle.Singleton.CreateRegistration<Action<HttpRequestMessage>>(
-                    () => m =>
-                    {
-                        var authorizationContext = Container.GetInstance<IHttpTokenAuthorizationContext>();
-                        void SetBearerToken(string t) => m.Headers.Add("Authorization", $"Bearer {t}");
-
-                        if (authorizationContext.BearerTokens.Any())
-                        {
-                            SetBearerToken(authorizationContext.BearerTokens.First());
-                        }
-                        else if (!String.IsNullOrEmpty(authorizationContext.AccessToken))
-                        {
-                            SetBearerToken(authorizationContext.AccessToken);
-                        }
-                    }, Container);
-
+           
             var gocHttpClientRegistration = Lifestyle.Singleton.CreateRegistration(() => new HttpClient(), Container);
 
 
             Container.RegisterConditional(serviceType: typeof(HttpClient), 
                                           registration: gocHttpClientRegistration,
-                                          predicate: c => c.Consumer.ImplementationType.GetInterface(nameof(IGocHttpBasicClient)) != null);
+                                          predicate: c => c.Consumer.ImplementationType.GetInterface(nameof(IGocHttpClient)) != null);
 
             void RegisterHttpClient(Type type, Registration registration) => Container.RegisterConditional(serviceType: type, 
                                                                                                            registration: registration, 
@@ -198,9 +183,8 @@ namespace GOC.ApiGateway
                                                                                                            context.Consumer.ImplementationType == typeof(HttpClientWrapper));
 
             RegisterHttpClient(typeof(Func<string, string, Uri>), consulUriResolverRegistration);
-            RegisterHttpClient(typeof(Action<HttpRequestMessage>), httpMessageDecoratorRegistration);
 
-            Container.Register<IGocHttpBasicClient, HttpClientWrapper>(Lifestyle.Scoped);
+            Container.Register<IGocHttpClient, HttpClientWrapper>(Lifestyle.Scoped);
         }
 
         private async Task<IEnumerable<string>> BearerTokenAccessor(HttpContext context)

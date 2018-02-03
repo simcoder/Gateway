@@ -31,12 +31,20 @@ namespace GOC.ApiGateway
         public string Authority { get; set; }
         public string ApiName { get; set; }
         public string ApiSecret { get; set; }
+        public string TokenEndpoint { get; set; }
+
+        public string TokenEndpointUrl
+        {
+            get => $"{Authority}/{TokenEndpoint}";
+        }
         public IList<DownstreamClient> DownstreamClients { get; set; }
     }
+    //TODO do this in json config file
     public class DownstreamClient
     {
-        public string ApiName { get; set; }
-        public string ApiSecret { get; set; }
+        public string ClientId { get; set; }
+        public string ClientSecret { get; set; }
+        public string ResourceName { get; set; }
     }
     public class RabbitMQSettings
     {
