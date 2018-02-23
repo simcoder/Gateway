@@ -22,6 +22,9 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.ViewComponents;
 using SimpleInjector.Lifestyles;
 using SimpleInjector.Integration.AspNetCore.Mvc;
+using Consul;
+using Microsoft.Extensions.Options;
+using Microphone.Core;
 
 namespace GOC.ApiGateway
 {
@@ -37,17 +40,6 @@ namespace GOC.ApiGateway
 
             Configuration = builder.Build();
             AppSettings = Configuration.GetSection("ApiGateWay").Get<AppSettings>();
-            //TODO do this somehow in json config file
-            var downstreamClients = new List<DownstreamClient>
-            {
-                new DownstreamClient
-                {
-                    ClientId = "api1.client",
-                    ClientSecret = "api1.client-secret",
-                    ResourceName = "api2"
-                }
-            };
-            AppSettings.Identity.DownstreamClients = downstreamClients;
         }
         public  static AppSettings   AppSettings { get; private set; }
         public IConfiguration Configuration { get; }
@@ -76,7 +68,6 @@ namespace GOC.ApiGateway
                 options.Heartbeat = AppSettings.Consul.Heartbeat;
                 options.Host = AppSettings.Consul.Host;
                 options.Port = AppSettings.Consul.Port;
-                options.HealthCheckPath = AppSettings.Consul.HealthCheckPath;
             });
 
             services.AddAuthentication("Bearer")
@@ -145,6 +136,7 @@ namespace GOC.ApiGateway
             // message bus registration
             Container.Register<IBus>(() => RabbitHutch.CreateBus($"host={AppSettings.Rabbit.Host}"), Lifestyle.Singleton);
             Container.Register<IHttpContextAccessor, HttpContextAccessor>(Lifestyle.Scoped);
+            Container.RegisterSingleton<IHealthCheck>(new EmptyHealthCheck());
             Container.CrossWire<ILoggerFactory>(app);
             Container.Verify();
                                                   
@@ -186,6 +178,8 @@ namespace GOC.ApiGateway
 
             Container.Register<IGocHttpClient, HttpClientWrapper>(Lifestyle.Scoped);
         }
+
+       
 
         private async Task<IEnumerable<string>> BearerTokenAccessor(HttpContext context)
         {

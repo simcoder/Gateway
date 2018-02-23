@@ -13,7 +13,7 @@ namespace GOC.ApiGateway
         public static IWebHost BuildWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                    .UseStartup<Startup>()
-                   .UseUrls("http://*:5060")
+                   .UseUrls("http://*:5010")
                 .Build();
     }
 }

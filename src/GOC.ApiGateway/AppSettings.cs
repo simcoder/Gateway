@@ -9,11 +9,7 @@ namespace GOC.ApiGateway
         public WaitAndRetrySettings WaitAndRetry { get; set; }
         public ConsulOptions Consul { get; set; }
         public IdentitySettings Identity { get; set; }
-        public RabbitMQSettings Rabbit
-        {
-            get;
-            set;
-        }
+        public RabbitMQSettings Rabbit { get; set; }
     }
     public class CircuitBreakerSettings
     {
@@ -32,18 +28,18 @@ namespace GOC.ApiGateway
         public string ApiName { get; set; }
         public string ApiSecret { get; set; }
         public string TokenEndpoint { get; set; }
-
+        public string ApiClientId { get; set; }
+        public string ApiClientSecret { get; set; }
         public string TokenEndpointUrl
         {
             get => $"{Authority}/{TokenEndpoint}";
         }
-        public IList<DownstreamClient> DownstreamClients { get; set; }
+        public IEnumerable<ApiResource> Resources { get; set; }
     }
     //TODO do this in json config file
-    public class DownstreamClient
+    public class ApiResource
     {
-        public string ClientId { get; set; }
-        public string ClientSecret { get; set; }
+        public string ResourceFriendlyName { get; set; }
         public string ResourceName { get; set; }
     }
     public class RabbitMQSettings

@@ -4,8 +4,8 @@ using GOC.ApiGateway.Dtos;
 
 namespace GOC.ApiGateway.Interfaces
 {
-    public interface IInventoryService
+    public interface ICompanyService
     {
-        Task<Result<InventoryDto>> CreateInventoryAsync(InventoryPostDto inventory);
+        Task<Result<CompanyDto>> CreateCompanyAsync(CompanyPostDto company);
     }
 }

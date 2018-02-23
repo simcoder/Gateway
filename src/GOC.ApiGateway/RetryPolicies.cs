@@ -11,7 +11,9 @@ namespace GOC.ApiGateway
         private readonly CircuitBreakerSettings _circuitBreakerSettings;
         private readonly WaitAndRetrySettings _waitAndRetrySettings;
         private readonly ILogger _logger;
-        private readonly Policy InventoryServiceCircuitBreaker;
+        public readonly Policy InventoryServiceCircuitBreaker;
+        public readonly Policy CrmServiceCircuitBreaker;
+
 
         public RetryPolicies(CircuitBreakerSettings circuitBreakerSettings, WaitAndRetrySettings waitAndRetrySettings, ILoggerFactory loggerFactory)
         {
@@ -20,8 +22,11 @@ namespace GOC.ApiGateway
             _logger = loggerFactory.CreateLogger<RetryPolicies>();
 
             var inventoryCircuitBreaker = CircuitBreakerPolicy();
+            var crmCircuitBreaker = CircuitBreakerPolicy();
+
             var waitAndRetry = WaitAndRetryPolicy();
 
+            CrmServiceCircuitBreaker = Policy.WrapAsync(waitAndRetry, crmCircuitBreaker);
             InventoryServiceCircuitBreaker = Policy.WrapAsync(waitAndRetry, inventoryCircuitBreaker);
         }
         

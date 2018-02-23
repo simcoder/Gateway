@@ -6,18 +6,18 @@ namespace GOC.ApiGateway.Handlers
 {
     public class TokenDelegateHandler
     {
-        public async Task<TokenResponse> DelegateAsync(string userToken, string authority, DownstreamClient downstreamClient)
-        {
-            var payload = new
-            {
-                token = userToken
-            };
+        //public async Task<TokenResponse> DelegateAsync(string userToken, string authority, DownstreamClient downstreamClient)
+        //{
+        //    var payload = new
+        //    {
+        //        token = userToken
+        //    };
 
-            // create token client
-            var client = new TokenClient($"{authority}/connect/token", downstreamClient.ApiName, downstreamClient.ApiSecret);
+        //    // create token client
+        //    var client = new TokenClient($"{authority}/connect/token", downstreamClient.ApiName, downstreamClient.ApiSecret);
 
 
-            return await client.RequestCustomGrantAsync("delegation", "api2", payload);
-        }
+        //    return await client.RequestCustomGrantAsync("delegation", "api2", payload);
+        //}
     }
 }
